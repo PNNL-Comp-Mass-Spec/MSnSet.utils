@@ -8,7 +8,7 @@ rrollup(
   msnset,
   rollBy,
   rollFun,
-  algorithm = c("reference", "sum"),
+  algorithm = c("reference", "sum", "median", "mean", "min", "max"),
   verbose = TRUE
 )
 }

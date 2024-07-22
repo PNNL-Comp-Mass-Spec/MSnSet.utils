@@ -19,6 +19,7 @@
 #' @importFrom Biobase exprs fData
 #' @importFrom outliers grubbs.test outlier
 #' @importFrom stats rnorm aggregate
+#' @importFrom rlang as_function
 #' @export rrollup
 #'
 #' @examples
@@ -29,7 +30,7 @@
 
 
 rrollup <- function(msnset, rollBy, rollFun,
-                    algorithm = c("reference", "sum"),
+                    algorithm = c("reference", "sum", "median", "mean", "min", "max"),
                     verbose=TRUE){
 
     algorithm <- match.arg(algorithm)
@@ -46,13 +47,12 @@ rrollup <- function(msnset, rollBy, rollFun,
         }
         exprs.new <- do.call(rbind, summarisedFeatures)
         rownames(exprs.new) <- unique_rollBy
-    }
-    if(algorithm == "sum"){
+    } else {
         temp <- data.frame(rollBy = fData(msnset)[[rollBy]],
                            exprs(msnset),
                            check.names = FALSE)
         temp[is.na(temp)] <- 0
-        temp <- aggregate(. ~ rollBy, temp, sum)
+        temp <- aggregate(. ~ rollBy, temp, as_function(algorithm))
         temp[temp == 0] <- NA
         exprs.new <- as.matrix(temp[,-1])
         rownames(exprs.new) <- temp[,1]
