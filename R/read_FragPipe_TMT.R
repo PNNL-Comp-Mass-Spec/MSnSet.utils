@@ -110,10 +110,13 @@ read_FragPipe_TMT <- function(path = NULL, org_to_retain = NULL, use_gene_as_pro
       select(-c(colnames(.)[[1]]:ReferenceIntensity)) %>%
       as.matrix()
 
+   p_data <- data.frame(sample_name = colnames(x_data),
+                        row.names = colnames(x_data))
+
    f_data <- df %>%
       select(c(colnames(.)[[1]]:ReferenceIntensity))
 
-   m <- MSnSet(exprs = x_data, fData = f_data)
+   m <- MSnSet(exprs = x_data, fData = f_data, pData = p_data)
 
    return(m)
 }
