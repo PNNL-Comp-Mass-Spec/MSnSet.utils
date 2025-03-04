@@ -36,16 +36,16 @@ rrollup <- function(msnset, rollBy, rollFun,
     algorithm <- match.arg(algorithm)
 
     if(algorithm == "reference"){
-        summarisedFeatures <- list()
+        summarizedFeatures <- list()
         unique_rollBy <- unique(fData(msnset)[[rollBy]])
-        for (i in 1:length(unique_rollBy)) {
+        for (i in seq_along(unique_rollBy)) {
             # Subset msnset to each rollBy group
             msnset_sub <- msnset[fData(msnset)[[rollBy]] == unique_rollBy[i], ,
                                  drop = FALSE]
-            summarisedFeatures[[i]] <- rrollup_a_feature_set(msnset_sub, rollBy,
+            summarizedFeatures[[i]] <- rrollup_a_feature_set(msnset_sub, rollBy,
                                                              rollFun, verbose)
         }
-        exprs.new <- do.call(rbind, summarisedFeatures)
+        exprs.new <- do.call(rbind, summarizedFeatures)
         rownames(exprs.new) <- unique_rollBy
     } else {
         temp <- data.frame(rollBy = fData(msnset)[[rollBy]],

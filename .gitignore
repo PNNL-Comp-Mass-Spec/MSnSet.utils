@@ -19,3 +19,5 @@ Misc/
 
 **/*.html
 vignettes/*.R
+
+tests/
