@@ -47,7 +47,8 @@
 #'   PeCorA R package (\url{https://github.com/jessegmeyerlab/PeCorA}).
 #'
 #' @return An \code{MSnSet} where the fData table includes new or updated
-#'   columns "pecora_pval_{treatment}" and "pecora_adj_pval_{treatment}".
+#'   columns "pecora_pval_{treatment}" and "pecora_adj_pval_{treatment}". The 
+#'   p-values are adjusted on a per protein basis, using the BH method.
 #'
 #' @seealso \code{\link[MSnSet.utils]{plot_PeCorA}}
 #'
