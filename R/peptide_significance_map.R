@@ -311,8 +311,13 @@ plot_colored_peptide_map <- function(prot,
                                      step_y = 0.033,
                                      border_color = "white",
                                      border_size = NULL,
-                                     aa_step = 20)
+                                     aa_step = 20,
+                                     env = parent.frame())
 {
+
+  prot_width_y <- env$prot_width_y
+  pep_width_y <- env$pep_width_y
+
   # arranging peptide positions - adds ymin and ymax columns
   prot <- layout_compact_stack(prot,
                                min_y = min_y,
@@ -369,8 +374,13 @@ peptide_significance_map_discrete <- function(x,
                                               step_y = 0.033,
                                               border_color = "white",
                                               border_size = NULL,
-                                              aa_step = 20)
+                                              aa_step = 20,
+                                              env = parent.frame())
 {
+
+  prot_width_y <- env$prot_width_y
+  pep_width_y <- env$pep_width_y
+
   cuts <- c(0, 0.0001, 0.001, 0.01, 0.05, 1)
   x[[p_val_from]] <- cut(x[[p_val_from]], cuts, ordered_result = TRUE,
                          right = FALSE, include.lowest = TRUE)
