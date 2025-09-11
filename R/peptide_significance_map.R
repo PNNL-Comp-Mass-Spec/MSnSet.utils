@@ -90,7 +90,8 @@ peptide_significance_map <- function(x,
                                      accession_col = "accession",
                                      title_from = accession_col,
                                      min_y = 0,
-                                     width_y = 0.025,
+                                     prot_width_y = 0.025,
+                                     pep_width_y = 0.025,
                                      step_y = 0.033,
                                      border_color = "white",
                                      border_size = NULL,
@@ -234,8 +235,12 @@ plot_peptide_on_protein_map <- function(prot,
                                         fill_by,
                                         border_color = "white",
                                         border_size = NULL,
-                                        aa_step = 20)
+                                        aa_step = 20,
+                                        env = parent.frame())
 {
+
+  prot_width_y <- env$prot_width_y
+
   prot_len <- prot %>%
     distinct(ProtLen) %>%
     as.numeric()
@@ -248,15 +253,15 @@ plot_peptide_on_protein_map <- function(prot,
     border_size <- 1.5 / log10(prot_len)
   }
 
-  width_y <- prot$ymax[[1]] - prot$ymin[[1]]
+  # width_y <- prot$ymax[[1]] - prot$ymin[[1]]
 
   p <-
     ggplot(data = prot) +
     # protein rectangle
     geom_rect(aes(xmin = 1 - 0.5,
                   xmax = prot_len + 0.5,
-                  ymin = -width_y * 2,
-                  ymax = -width_y)) +
+                  ymin = -prot_width_y * 2,
+                  ymax = -prot_width_y)) +
     # peptide rectangles
     geom_rect(aes(xmin = First_AA - 0.5,
                   xmax = Last_AA + 0.5,
@@ -486,16 +491,20 @@ peptide_significance_map_manhattan <- function(prot,
                                                p_val_from,
                                                fill_by = NULL,
                                                min_y = 0,
-                                               width_y = 0.025,
+                                               # width_y = 0.025,
                                                border_color = "white",
                                                border_size = NULL,
-                                               aa_step = 20)
+                                               aa_step = 20,
+                                               env = parent.frame())
 {
+
+  prot_width_y <- env$prot_width_y
+  pep_width_y <- env$pep_width_y
   # arranging peptide positions
   prot <- layout_manhattan(prot = prot,
                            p_val_from = p_val_from,
                            min_y = min_y,
-                           width_y = width_y)
+                           width_y = pep_width_y)
 
   if (is.null(fill_by)) {
     fill_by <- p_val_from ## Dummy variable
@@ -515,12 +524,12 @@ peptide_significance_map_manhattan <- function(prot,
   if (num_labels < 5) num_labels <- 5
 
   lblz <- pretty_breaks(num_labels)(0:sig_scaler)
-  width_y <- prot$ymax[[1]] - prot$ymin[[1]]
+  # width_y <- prot$ymax[[1]] - prot$ymin[[1]]
 
   p <- p +
     scale_y_continuous(breaks = lblz / sig_scaler,
                        labels = scientific_format(digits = 1)(10 ^ (-lblz)),
-                       limits = c(-2 * width_y, 1 + width_y),
+                       limits = c(-2 * prot_width_y, 1 + prot_width_y),
                        expand = rep(0, 2)) +
     geom_hline(yintercept = -log10(0.05) / sig_scaler,
                color = "grey",
