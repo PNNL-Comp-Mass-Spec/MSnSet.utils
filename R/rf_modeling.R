@@ -32,7 +32,7 @@ select_features_varSelRF <- function(x, y, ...){
 
 
 #' @importFrom Boruta Boruta getSelectedAttributes
-select_features_Boruta <- function(x, y, seed_to_use, ...){
+select_features_Boruta <- function(x, y, ...){
 
   #     # .. add on ..
   #     # .. preselection of features using plain random forest
@@ -45,7 +45,6 @@ select_features_Boruta <- function(x, y, seed_to_use, ...){
   rfbo <- Boruta(x, y,
                  #maxRuns = 100, # 1000
                  doTrace=0,
-                 seed = seed_to_use,
                  #ntree=5000, # 10000
                  ...)
   # 5h with 10000
@@ -185,7 +184,7 @@ rf_modeling <- function(msnset,
   sel.alg <- match.arg(sel.alg)
   FUN <- switch(sel.alg,
                 varSelRF = select_features_varSelRF,
-                Boruta = function(x,y, seed_to_use, ...) select_features_Boruta(x,y, seed_to_use, ...),
+                Boruta = function(x,y, ...) select_features_Boruta(x,y,...),
                 top = select_features_top)
 
   # do K-fold split here
@@ -214,7 +213,7 @@ rf_modeling <- function(msnset,
     }))
   })))
   set.seed(seed)
-  seed_seq <- sample(-.Machine$integer.max:.Machine$integer.max, size = K)
+  seed_seq <- sample(1:.Machine$integer.max, size = K)
   invisible(clusterExport(multiproc_cl,
                           c("dSet","cv_idx","features",
                             "response", "seed_seq"),
@@ -227,7 +226,7 @@ rf_modeling <- function(msnset,
 
     if(sel.feat){
       features.sel <- FUN(x=dSet[!i,features],
-                          y=dSet[!i,response], seed_to_use = seed, ...)
+                          y=dSet[!i,response], seed = seed, ...)
     }else{
       features.sel <- features
     }
