@@ -183,9 +183,9 @@ rf_modeling <- function(msnset,
   #---
   sel.alg <- match.arg(sel.alg)
   FUN <- switch(sel.alg,
-                varSelRF = select_features_varSelRF,
+                varSelRF = function(x, y, ...) select_features_varSelRF(x,y),
                 Boruta = function(x,y, ...) select_features_Boruta(x,y,...),
-                top = select_features_top)
+                top = function(x,y, ...) select_features_top(x,y))
 
   # do K-fold split here
   if(is.null(K))
@@ -213,7 +213,7 @@ rf_modeling <- function(msnset,
     }))
   })))
   set.seed(seed)
-  seed_seq <- sample(-.Machine$integer.max:.Machine$integer.max, size = K)
+  seed_seq <- sample(1:.Machine$integer.max, size = K)
   invisible(clusterExport(multiproc_cl,
                           c("dSet","cv_idx","features",
                             "response", "seed_seq"),
@@ -226,7 +226,7 @@ rf_modeling <- function(msnset,
 
     if(sel.feat){
       features.sel <- FUN(x=dSet[!i,features],
-                          y=dSet[!i,response], seed = seed)
+                          y=dSet[!i,response], seed = seed, ...)
     }else{
       features.sel <- features
     }
