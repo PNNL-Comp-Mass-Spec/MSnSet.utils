@@ -183,9 +183,9 @@ rf_modeling <- function(msnset,
   #---
   sel.alg <- match.arg(sel.alg)
   FUN <- switch(sel.alg,
-                varSelRF = select_features_varSelRF,
+                varSelRF = function(x, y, ...) select_features_varSelRF(x,y),
                 Boruta = function(x,y, ...) select_features_Boruta(x,y,...),
-                top = select_features_top)
+                top = function(x,y, ...) select_features_top(x,y))
 
   # do K-fold split here
   if(is.null(K))
