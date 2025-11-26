@@ -14,7 +14,7 @@ adj.P.Val <- NULL # (For lintr)
 #' @param feat_name_colname If provided, a column in \code{fData(msnset)} by which
 #'     to name the features by. If \code{NULL}, then
 #'     \code{featureNames(msnset) will be used.}
-#' @param highlight_feats If provided, put a star (★) next to the label of these
+#' @param highlight_feats If provided, put a star (U+2605) next to the label of these
 #'     features. Note: this uses \code{feat_name_colnames} if passed, and not
 #'     \code{msnset}'s native features.
 #' @param highlight_reason Short string describing why certain features would be
