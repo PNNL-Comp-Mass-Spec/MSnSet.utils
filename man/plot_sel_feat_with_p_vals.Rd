@@ -29,7 +29,7 @@ learning response variable}
 to name the features by. If \code{NULL}, then
 \code{featureNames(msnset) will be used.}}
 
-\item{highlight_feats}{If provided, put a star (★) next to the label of these
+\item{highlight_feats}{If provided, put a star (U+2605) next to the label of these
 features. Note: this uses \code{feat_name_colnames} if passed, and not
 \code{msnset}'s native features.}
 
