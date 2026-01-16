@@ -185,6 +185,9 @@ create_overall_correlation_heatmap <- function(msnset, annotation_by, width, hei
       method = "pearson"
    )
 
+   cor_mat_idxes <- seq_len(nrow(cor_mat))
+   cor_mat <- cor_mat[rev(cor_mat_idxes), rev(cor_mat_idxes)]
+
    if (!annotation_by %in% colnames(pData(msnset))) {
       stop(glue::glue("annotation_by column '{annotation_by}' not found in pData(msnset). I only see: {paste(colnames(pData(msnset)), collapse=', ')}"))
    }
@@ -234,6 +237,7 @@ create_overall_correlation_heatmap <- function(msnset, annotation_by, width, hei
       ),
       show_column_names = FALSE,
       show_row_names = TRUE,
+      row_names_gp = gpar(fontsize = 2, fontfamily = "Fira Code"),
       height = height,
       width = width,
       row_title = "Samples",
@@ -401,7 +405,7 @@ create_boxplot <- function(msnset, fill_by, facet_by) {
 #' @export
 #' @importFrom ggplot2 ggplot aes geom_bar theme element_text xlab position_stack
 #' @importFrom viridis scale_fill_viridis
-create_feature_count <- function(msnset, x_by) {
+create_feature_count <- function(msnset, x_by, feature_kind = c("Feature", "Protein", "Site")) {
    Count <- NULL
    Type <- NULL
    x_to_num_complete <- c()
@@ -422,24 +426,23 @@ create_feature_count <- function(msnset, x_by) {
          rep(c("Complete", "Non-complete"), each = length(x_by_uniques)),
          levels = c("Complete", "Non-complete")
       )
-   ) %>%
-      arrange(x, Count)
+   )
 
    p <- ggplot(
       barplot_df,
       aes(
          x = x,
          y = Count,
-         fill = forcats::fct_inorder(Type)
+         fill = Type,
+         group = factor(Type, levels = c("Non-complete", "Complete")) # Control stacking order
       )
    ) +
-      geom_bar(stat = "identity", linewidth = 0.25, position = position_stack()) +
+      geom_col(linewidth = 0.25, position = "stack") +
       theme(
          text = element_text(family = "Fira Code")
       ) +
       xlab(x_by) +
-      scale_fill_viridis(discrete = TRUE, begin = 0.3, end = 0.8, direction = -1, name = "Feature Type")
-
+      scale_fill_viridis(discrete = TRUE, begin = 0.3, end = 0.8, name = glue::glue("{feature_kind} Type"))
    p
 }
 
@@ -448,7 +451,7 @@ create_feature_count <- function(msnset, x_by) {
 #' @importFrom ggplot2 ggplot aes geom_line geom_point theme element_text ylim
 #' @importFrom viridis scale_color_viridis
 #' @importFrom MSnbase plotNA
-create_missingness <- function(msnset, font_family = "Fira Code") {
+create_missingness <- function(msnset, font_family = "Fira Code", feature_kind = "Feature") {
    p <- plotNA(msnset) +
       theme(
          text = element_text(family = "Fira Code")
@@ -457,7 +460,8 @@ create_missingness <- function(msnset, font_family = "Fira Code") {
          discrete = TRUE,
          begin = 0.3,
          end = 0.8,
-         name = "Feature Count"
+         name = "Feature Count",
+         labels = c("proteins" = glue::glue("Complete {feature_kind}s"), "data" = "Complete Data")
       ) +
       ylim(0, 1)
 
@@ -537,7 +541,7 @@ create_multi_pca <- function(
 
 #' @note Order the contrasts in `p_data_contrasts` with the first being the primary grouping variable for boxplots, etc. and the second being the secondary grouping variable.
 #' @export
-qc_report <- function(msnset, msnset_orig, p_data_contrasts, the_sch_samples, report_output_path, plot_cache_dir = NULL, report_title = "QC Report", self_contained = TRUE, img_dims = list(
+qc_report <- function(msnset, msnset_orig, p_data_contrasts, the_sch_samples, report_output_path, plot_cache_dir = NULL, report_title = "QC Report", self_contained = TRUE, feature_kind = "Feature", img_dims = list(
                          boxplot = c(8, 6),
                          feature_count = c(8, 6),
                          missingness = c(8, 6),
@@ -580,7 +584,8 @@ qc_report <- function(msnset, msnset_orig, p_data_contrasts, the_sch_samples, re
       creating("feature_count")
       feature_count <- create_feature_count(
          msnset,
-         x_by = prim
+         x_by = prim,
+         feature_kind = feature_kind
       )
       cache("feature_count", feature_count)
    }
@@ -598,7 +603,8 @@ qc_report <- function(msnset, msnset_orig, p_data_contrasts, the_sch_samples, re
       )
       missingness <- create_missingness(
          msnset_orig,
-         font_family = "Fira Code"
+         font_family = "Fira Code",
+         feature_kind = feature_kind
       )
       cache("missingness", missingness)
    }
@@ -609,7 +615,7 @@ qc_report <- function(msnset, msnset_orig, p_data_contrasts, the_sch_samples, re
          msnset,
          contrasts_to_test = p_data_contrasts,
          legend_position = "right",
-         ncol = 1
+         nrow = 1
       )
       cache("multi_pca", multi_pca)
    }

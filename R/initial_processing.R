@@ -86,8 +86,6 @@ copy_raw_files_from_dms <- function(data_package_num, base_path, overwrite = FAL
 }
 
 
-
-
 #' Run msConvert CLI to Convert Raw Files to mzML
 #'
 #' Converts Thermo .raw files to .mzML format using the msConvert command-line tool.
@@ -109,19 +107,20 @@ copy_raw_files_from_dms <- function(data_package_num, base_path, overwrite = FAL
 #' )
 #' }
 run_msConvert_cli <- function(
-    raw_files_dir,
-    output_dir,
-    msconvert_path = NULL,
-    addl_cli_args = c(
-       "--zlib",
-       "--filter",
-       "\"peakPicking vendor msLevel=1-\"",
-       "--filter",
-       "\"titleMaker",
-       "<RunId>.<ScanNumber>.<ScanNumber>.<ChargeState>",
-       "File:\"\"\"^<SourcePath^>\"\"\", NativeID:\"\"\"^<Id^>\"\"\"\""
-    ),
-    overwrite = FALSE) {
+  raw_files_dir,
+  output_dir,
+  msconvert_path = NULL,
+  addl_cli_args = c(
+     "--zlib",
+     "--filter",
+     "\"peakPicking vendor msLevel=1-\"",
+     "--filter",
+     "\"titleMaker",
+     "<RunId>.<ScanNumber>.<ScanNumber>.<ChargeState>",
+     "File:\"\"\"^<SourcePath^>\"\"\", NativeID:\"\"\"^<Id^>\"\"\"\""
+  ),
+  overwrite = FALSE
+) {
    if (is.null(msconvert_path)) {
       msconvert_path <- Sys.which("msconvert")
       if (msconvert_path == "") {
@@ -177,7 +176,6 @@ run_msConvert_cli <- function(
 }
 
 
-
 #' Organize mzML Files by Plex
 #'
 #' Moves mzML files into plex-specific subdirectories based on filename regex.
@@ -197,10 +195,11 @@ run_msConvert_cli <- function(
 #' organize_mzml_by_plex("E:/Data_E/Tyler/5306_global/")
 #' }
 organize_mzml_by_plex <- function(
-    src_mzML_dir,
-    dest_mzML_subdirs = "mzML/plexes/",
-    overwrite = FALSE,
-    sub_with_cap_grp_1 = "^(\\d{2}).*") {
+  src_mzML_dir,
+  dest_mzML_subdirs = "mzML/plexes/",
+  overwrite = FALSE,
+  sub_with_cap_grp_1 = "^(\\d{2}).*"
+) {
    if (!dir.exists(src_mzML_dir)) {
       stop("mzML directory does not exist: ", src_mzML_dir, call. = FALSE)
    }
@@ -317,7 +316,6 @@ write_plex_annotation_files <- function(mapping, mzML_plexes_dir) {
 }
 
 
-
 #' Create MSnSet Object from Ratios and FASTA
 #'
 #' Generates an MSnSet object using ratio data and a FASTA file for feature data.
@@ -334,14 +332,16 @@ write_plex_annotation_files <- function(mapping, mzML_plexes_dir) {
 #' @return An MSnSet object containing the processed data.
 #' @export
 create_msnset <- function(
-    path_to_ratios_or_ratios,
-    path_to_fasta_for_f_data,
-    p_data_df,
-    feature_name_col = "ensembl_protein",
-    semicolon_warning = TRUE) {
+  path_to_ratios_or_ratios,
+  path_to_fasta_for_f_data,
+  p_data_df,
+  feature_name_col = c("ensembl_protein", "ensembl_gene"),
+  semicolon_warning = TRUE,
+  subset_samples_by_p_data = TRUE,
+  save_as_rds_path = NULL
+) {
    Index <- NULL
    MaxPepProb <- NULL
-   feature_id <- NULL
    . <- NULL
    description <- NULL
    name <- NULL
@@ -352,6 +352,9 @@ create_msnset <- function(
             stop("Ratios file does not exist: ", path_to_ratios_or_ratios, call. = FALSE)
          }
          ratios <- read.delim(path_to_ratios_or_ratios, stringsAsFactors = FALSE, check.names = FALSE)
+         if (ncol(ratios) < 7) {
+            stop("Ratios file must contain at least 7 columns (including metadata and sample columns).", call. = FALSE)
+         }
       } else if (is.data.frame(path_to_ratios_or_ratios)) {
          ratios <- path_to_ratios_or_ratios
       } else {
@@ -361,7 +364,63 @@ create_msnset <- function(
    }
 
    ratios <- get_ratios()
-   where_samples_start <- (which(colnames(ratios) == "ReferenceIntensity") + 1)
+   if (!"Index" %in% colnames(ratios)) {
+      stop("'(path to ratios or) ratios' data.frame must contain an 'Index' column.", call. = FALSE)
+   }
+   orig_feat_count <- nrow(ratios)
+   if ("ReferenceIntensity" %in% colnames(ratios)) {
+      where_samples_start <- (which(colnames(ratios) == "ReferenceIntensity") + 1)
+   } else if ("Transcript.Id" %in% colnames(ratios)) {
+      where_samples_start <- (which(colnames(ratios) == "Transcript.Id") + 1)
+   } else {
+      stop("Cannot determine where sample columns start in ratios data.frame. ",
+         "Expected 'ReferenceIntensity' (for TMT/fragpipe) or 'Transcript.Id' (for DIA/<DIA tool placeholder>) column to be present.",
+         call. = FALSE
+      )
+   }
+
+   get_p_data <- function() {
+      tryCatch(
+         {
+            a <- sort(colnames(ratios)[where_samples_start:ncol(ratios)])
+            b <- sort(rownames(p_data_df))
+            if (!all(a %in% b)) {
+               samples_to_use <- a[a %in% b]
+               warning("Subsetting ratios and pData to matching samples. ",
+                  "Samples in ratios not found in pData: ",
+                  paste(setdiff(a, b), collapse = ", "),
+                  "Number of samples going forward: ", length(samples_to_use),
+                  call. = FALSE
+               )
+            } else {
+               samples_to_use <- intersect(a, b)
+               if (length(a) != length(b)) {
+                  warning("Subsetting ratios and pData to matching samples. ",
+                     "Number of samples going forward: ", length(samples_to_use),
+                     call. = FALSE
+                  )
+               }
+            }
+            ratios <<- ratios %>%
+               select(
+                  1:(where_samples_start - 1),
+                  all_of(samples_to_use)
+               )
+         },
+         error = function(e) {
+            stop("Error in matching pData row names to `ratios` sample names: ",
+               conditionMessage(e),
+               call. = FALSE
+            )
+         }
+      )
+
+      p_data_df <- p_data_df[colnames(ratios)[where_samples_start:ncol(ratios)], ]
+      return(p_data_df)
+   }
+
+   # PHENO DATA
+   p_data <- get_p_data()
 
    get_f_data <- function() {
       fst <- readAAStringSet(path_to_fasta_for_f_data)
@@ -369,7 +428,7 @@ create_msnset <- function(
       withCallingHandlers(
          {
             feature_df <- data.frame(name = names(fst)) %>%
-               filter(!grepl("^Cont", name)) %>%
+               dplyr::filter(!grepl("^Cont", name)) %>%
                separate(
                   col = name,
                   into = c(
@@ -415,25 +474,54 @@ create_msnset <- function(
          }
       )
 
+      if ("Peptide" %in% colnames(ratios)) { # PTM data - reformat Index to Index-site@Peptide
+         ratios_new <- ratios %>%
+            mutate(site = sub(".*_([^_]+$)", "\\1", Index)) %>%
+            mutate(
+               feature_id = paste0(
+                  stringr::str_split_i(Index, "_", 1), "-", site, "@", Peptide
+               )
+            )
+         join_on <- "ProteinID"
+      } else { # Global data - no reformatting
+         ratios_new <- ratios %>%
+            mutate(feature_id = Index)
+         join_on <- "Index"
+      }
 
-      f_data <- ratios %>%
-         mutate(feature_id = Index) %>%
+
+      f_data <- ratios_new %>%
          arrange(MaxPepProb) %>%
-         filter(!duplicated(feature_id)) %>%
          as.data.frame() %>%
-         `rownames<-`(.$feature_id) %>%
+         `rownames<-`(.$Index) %>%
          select(
-            feature_id,
-            1:(where_samples_start - 1)
+            -c((where_samples_start):ncol(ratios))
          ) %>%
-         left_join(feature_df,
-            by = c("Index" = feature_name_col)
+         inner_join(feature_df,
+            by = setNames(feature_name_col, join_on),
+            keep = TRUE
          ) %>%
+         dplyr::filter(!duplicated(feature_id)) %>%
          `rownames<-`(.$feature_id)
+
+
+      if ("MaxPepProb" %in% colnames(f_data)) {
+         sort_by <- "MaxPepProb"
+      } else {
+         sort_by <- "GeneNames"
+      }
+
+      ratios_new <- ratios_new %>%
+         arrange(!!sym(sort_by)) %>%
+         dplyr::filter(!duplicated(feature_id)) %>%
+         tibble::column_to_rownames("feature_id") %>%
+         select(all_of(setdiff(colnames(ratios_new), colnames(f_data))))
+
+      ratios <<- ratios_new
 
       semicolon_rows <- which(grepl(";", f_data$ensembl_gene))
       if (length(semicolon_rows) > 0 && semicolon_warning) {
-         warning("Removed ",
+         warning("Contains ",
             length(semicolon_rows),
             " rows with IDs (semicolon ';' in 'Index' column).",
             call. = FALSE
@@ -443,29 +531,66 @@ create_msnset <- function(
       return(f_data)
    }
 
-   get_p_data <- function() {
-      if (!identical(sort(rownames(p_data_df)), sort(colnames(ratios)[where_samples_start:ncol(ratios)]))) {
-         stop("Row names of 'p_data_df' must match the sample names in the ratios data.frame.", call. = FALSE)
-      }
-      p_data_df <- p_data_df[colnames(ratios)[where_samples_start:ncol(ratios)], ]
-      return(p_data_df)
-   }
 
    get_e_data <- function(f_data) {
-      e_data <- ratios %>%
-         `rownames<-`(.$Index) %>%
-         .[
-            rownames(f_data),
-            where_samples_start:ncol(ratios)
-         ] %>%
-         as.matrix()
+      e_data <- ratios[rownames(f_data), ] %>% as.matrix()
+
       return(e_data)
    }
 
-   f_data <- get_f_data()
-   p_data <- get_p_data()
+
+   # FEATURE DATA
+   if (typeof(path_to_fasta_for_f_data) != typeof(data.frame())) {
+      if (typeof(path_to_fasta_for_f_data) != "character" ||
+         !file.exists(path_to_fasta_for_f_data)) {
+         stop("'path_to_fasta_for_f_data' must be either a valid file path or a data.frame.", call. = FALSE)
+      } else {
+         f_data <- get_f_data()
+      }
+   } else {
+      f_data <- path_to_fasta_for_f_data
+   }
+
+   if (nrow(f_data) < orig_feat_count) {
+      warning("After merging with FASTA data, feature count reduced from ",
+         orig_feat_count,
+         " to ",
+         nrow(f_data),
+         ". This may indicate missing mappings between ratios and FASTA.",
+         call. = FALSE
+      )
+   }
+
+   # EXPRESSION DATA
    e_data <- get_e_data(f_data)
 
+   if (!identical(sort(colnames(e_data)), sort(rownames(p_data)))) {
+      stop(
+         glue("Column names of e_data (dim = {dim(e_data)[1]} x {dim(e_data)[2]}) do "),
+         glue("not match row names of p_data (dim = {dim(p_data)[1]} x {dim(p_data)[2]}). "),
+         "Please ensure that sample names are consistent between the ratios data.frame and p_data_df.",
+         call. = FALSE
+      )
+   }
+
+   if (!identical(sort(rownames(e_data)), sort(rownames(f_data)))) {
+      stop(
+         glue("Row names of e_data (dim = {dim(e_data)[1]} x {dim(e_data)[2]}) do "),
+         glue("not match row names of f_data (dim = {dim(f_data)[1]} x {dim(f_data)[2]}). "),
+         "Please ensure that feature names are consistent between the ratios data.frame and the FASTA file.",
+         call. = FALSE
+      )
+   }
+
+   e_data <- e_data[sort(rownames(e_data)), sort(colnames(e_data))]
+   f_data <- f_data[sort(rownames(f_data)), ]
+   p_data <- p_data[sort(rownames(p_data)), ]
+
    m <- MSnSet(e_data, f_data, p_data)
+
+   if (!is.null(save_as_rds_path)) {
+      saveRDS(m, file = save_as_rds_path)
+   }
+
    return(m)
 }

@@ -8,8 +8,10 @@ create_msnset(
   path_to_ratios_or_ratios,
   path_to_fasta_for_f_data,
   p_data_df,
-  feature_name_col = "ensembl_protein",
-  semicolon_warning = TRUE
+  feature_name_col = c("ensembl_protein", "ensembl_gene"),
+  semicolon_warning = TRUE,
+  subset_samples_by_p_data = TRUE,
+  save_as_rds_path = NULL
 )
 }
 \arguments{

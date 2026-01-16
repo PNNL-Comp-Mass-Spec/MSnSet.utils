@@ -6,9 +6,12 @@
 \usage{
 export_data_levels(
   m_raw_level_files,
+  funcs_to_apply_and_args = list(.do_filter = list(args = list(missingness_thresh_gt =
+    0.3, min_plex_thresh_gt = 3), exporting = c("csv", "msnset")), .do_normalize =
+    list(args = list(), exporting = c()), .do_batch_correction = list(args = list(),
+    exporting = c("export_exprs", "export_msnset_to_rds"))),
   out_dir = ".",
-  missingness_thresh_gt = 0.3,
-  min_plex_thresh_gt = 3
+  dry_run = FALSE
 )
 }
 \arguments{
