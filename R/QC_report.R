@@ -1,3 +1,23 @@
+#' Prepare Data for Density Plots
+#'
+#' Reshapes an \code{MSnSet}'s exprs data into a long-format data frame
+#' ("long-format" being "each row is a single expression value."), suitable for density
+#' and ridge plots using \code{ggplot2}.
+#'
+#' @param msnset MSnSet. The object containing expression data and pData.
+#' @param facet_by Character. pData column name used for faceting.
+#' @param fill_by Character. pData column name used for fill colors.
+#' @param do_paste Logical. Whether to append the column name \code{facet_by}
+#'    to its values. For example, if \code{facet_by = "tmt_plex"} and a value is
+#'   \code{"Plex1"}, it becomes \code{"tmt_plex Plex1"}. Default is TRUE.
+#'
+#' @importFrom Biobase exprs pData sampleNames
+#' @importFrom dplyr %>% across arrange filter inner_join mutate select where
+#' @importFrom tibble rownames_to_column
+#' @importFrom tidyr pivot_longer
+#' @importFrom rlang sym
+#'
+#' @return A data.frame in long format.
 .get_density_df <- function(msnset, facet_by, fill_by, do_paste = TRUE) {
    feature_id <- NULL
    df <- exprs(msnset) %>%
@@ -50,9 +70,28 @@
 }
 
 
-#' @export
+#' Create Faceted Density Ridge Plot
+#'
+#' Generates density ridge plots for each sample, chunked into faceted groups.
+#'
+#' @param msnset MSnSet. The object containing expression data.
+#' @param facet_by Character. The pData column to group plots by.
+#' @param fill_by Character. The pData column used to color the ridges.
+#'
+#'
+#' @details Tip: to get a consistent/desired font, add to the output of this function the following:
+#' \code{ggplot2::theme(
+#'          text = element_text(family = "Font Name"),
+#'          axis.text.x = element_text(family = "Font Name", size = 4
+#'       )}
 #' @importFrom ggridges geom_density_ridges theme_ridges
-#' @importFrom ggplot2 ggplot aes facet_wrap scale_fill_manual coord_cartesian
+#' @importFrom ggplot2 ggplot aes facet_wrap scale_fill_manual coord_cartesian rel element_blank element_rect element_text theme labs after_stat
+#' @importFrom viridis scale_fill_viridis
+#' @importFrom tools toTitleCase
+#' @importFrom forcats fct_rev
+#'
+#' @return A ggplot object.
+#' @export
 create_faceted_density_plot <- function(msnset, facet_by, fill_by) {
    df <- .get_density_df(msnset, facet_by, fill_by)
 
@@ -108,22 +147,23 @@ create_faceted_density_plot <- function(msnset, facet_by, fill_by) {
             fill = "white",
             color = NA
          ),
-         text = element_text(
-            family = "Fira Code"
-         ),
-         axis.text.x = element_text(
-            family = "Fira Code",
-            size = 4
-         )
       )
-
    p
 }
 
 
-#' @export
-#' @importFrom ggplot2 ggplot aes geom_density geom_vline labs theme_minimal theme element_line element_rect
+#' Create Layered Density Plot
+#'
+#' Overlays density distribution curves for all samples on a single set of axes.
+#'
+#' @param msnset MSnSet. The object containing expression data.
+#' @param color_by Character. The pData column used to color the density lines.
+#' @importFrom ggplot2 ggplot aes geom_density geom_vline labs theme_minimal theme element_line element_rect element_text
 #' @importFrom viridis scale_color_viridis
+#' @importFrom glue glue
+#'
+#' @return A ggplot object.
+#' @export
 create_layered_density_plot <- function(msnset, color_by) {
    df <- .get_density_df(msnset, facet_by = color_by, fill_by = color_by, do_paste = FALSE)
 
@@ -150,7 +190,7 @@ create_layered_density_plot <- function(msnset, color_by) {
          name = tools::toTitleCase(gsub("_", " ", color_by))
       ) +
       labs(
-         x = "Median-centered log2 Ratio",
+         x = "Median-centered log2 Expression Level",
          y = "Density",
          subtitle = n_features_label
       ) +
@@ -174,10 +214,30 @@ create_layered_density_plot <- function(msnset, color_by) {
    return(p)
 }
 
-#' @export
-#' @importFrom ComplexHeatmap Heatmap
+#' Create Overall Sample Correlation Heatmap
+#'
+#' Calculates and visualizes Pearson correlation between all sample pairs
+#' in an MSnSet.
+#'
+#' @param msnset MSnSet. The object containing expression data.
+#' @param annotation_by Character. The pData column name used to annotate samples.
+#' @param width unit. The width of the heatmap.
+#' @param height unit. The height of the heatmap.
+#'
+#' @details This function requires width and height to be specified because
+#' the underlying plotting technology (ComplexHeatmap) is best used with explicit sizing.
+#'
+#' @importFrom Biobase exprs pData
+#' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation rowAnnotation
 #' @importFrom grid unit gpar
 #' @importFrom circlize colorRamp2
+#' @importFrom viridis viridis
+#' @importFrom tools toTitleCase
+#' @importFrom glue glue
+#' @importFrom stats cor
+#'
+#' @return A HeatmapList object, returned invisibly after drawing.
+#' @export
 create_overall_correlation_heatmap <- function(msnset, annotation_by, width, height) {
    cor_mat <- cor(
       x = exprs(msnset),
@@ -255,13 +315,30 @@ create_overall_correlation_heatmap <- function(msnset, annotation_by, width, hei
    return(d)
 }
 
-#' @export
-#' @importFrom ComplexHeatmap Heatmap
+
+#' Create Detailed Sample Correlation Heatmap
+#'
+#' Generates a pairwise correlation heatmap for a specific set of samples with
+#' numeric correlation values displayed in cells.
+#'
+#' @param msnset MSnSet. The object containing expression data.
+#' @param the_samples Character. Vector of sample names to include.
+#' @param the_samples_relabling_fn Function. A function applied to sample IDs
+#'    for display on the heatmap axes.
+#' @param width unit. The width of individual heatmap rectangles.
+#' @param height unit. The height of individual heatmap rectangles.
+#'
+#' @details This function requires width and height to be specified because
+#' the underlying plotting technology (ComplexHeatmap) is best used with explicit sizing.
+#'
+#' @importFrom Biobase exprs
+#' @importFrom ComplexHeatmap Heatmap draw max_text_width
 #' @importFrom grid unit gpar grid.rect grid.text
 #' @importFrom circlize colorRamp2
 #' @importFrom stats cor
-#' @importFrom ggplot2 theme
 #'
+#' @return A HeatmapList object, returned invisibly after drawing.
+#' @export
 create_samples_correlation_heatmap <- function(msnset, the_samples, the_samples_relabling_fn, width, height) {
    cor_mat <- cor(
       exprs(msnset)[, the_samples],
@@ -352,12 +429,24 @@ create_samples_correlation_heatmap <- function(msnset, the_samples, the_samples_
 
 # Expression heatmap
 # Boxplot
-#' @export
+#' Create Sample Boxplots
+#'
+#' Generates boxplots of expression distributions across samples,
+#' faceted and colored by pData columns.
+#'
+#' @param msnset MSnSet. The object containing expression data.
+#' @param fill_by Character. The pData column name for color-coding boxes.
+#' @param facet_by Character. The pData column name for faceting the plot.
+#'
+#' @importFrom Biobase exprs pData sampleNames
 #' @importFrom glue glue
-#' @importFrom ggplot2 ggplot aes geom_boxplot theme element_text
+#' @importFrom ggplot2 ggplot aes geom_boxplot theme element_text xlab vars
 #' @importFrom ggh4x facet_nested
 #' @importFrom dplyr left_join mutate
 #' @importFrom viridis scale_fill_viridis
+#'
+#' @return A ggplot object.
+#' @export
 create_boxplot <- function(msnset, fill_by, facet_by) {
    Value <- NULL
    boxplot_df <- as.data.frame(as.table(exprs(msnset)))
@@ -389,22 +478,30 @@ create_boxplot <- function(msnset, fill_by, facet_by) {
       theme(
          axis.text.x = element_blank(),
          axis.ticks.x = element_blank(),
-         text = element_text(family = "Fira Code")
       ) +
       xlab("Samples") +
       scale_fill_viridis(discrete = TRUE, begin = 0.3, end = 0.8, direction = -1)
 
    p
 }
-# Site/feature counts w/is_complete
 
-# Abundance levels by a group
-# Density plot by plex
-# Multi PCA
-# Expression heatmap
-#' @export
-#' @importFrom ggplot2 ggplot aes geom_bar theme element_text xlab position_stack
+#' Create Feature Count Plot
+#'
+#' Visualizes the number of features (e.g., proteins or peptides)
+#' divided into complete and non-complete observations across sample groups.
+#'
+#' @param msnset MSnSet. The object containing expression data.
+#' @param x_by Character. The pData column name used for the x-axis groups.
+#' @param feature_kind Character. Label for the type of features
+#'    (e.g., "Feature", "Protein", "Site"). Only used for legend labeling.
+#'
+#' @importFrom Biobase exprs pData
+#' @importFrom ggplot2 ggplot aes geom_col theme element_text xlab position_stack
 #' @importFrom viridis scale_fill_viridis
+#' @importFrom glue glue
+#'
+#' @return A ggplot object.
+#' @export
 create_feature_count <- function(msnset, x_by, feature_kind = c("Feature", "Protein", "Site")) {
    Count <- NULL
    Type <- NULL
@@ -446,16 +543,26 @@ create_feature_count <- function(msnset, x_by, feature_kind = c("Feature", "Prot
    p
 }
 
-# Missingness line plot
-#' @export
-#' @importFrom ggplot2 ggplot aes geom_line geom_point theme element_text ylim
-#' @importFrom viridis scale_color_viridis
+
+#' Create Missingness Plot
+#'
+#' Generates a visualization of missing values across samples using
+#' \code{MSnbase::plotNA} as an engine.
+#'
+#' @param msnset MSnSet. The object containing expression data.
+#' @param font_family Character. The font family to use for text elements.
+#' @param feature_kind Character. Label for the type of features (e.g., "Feature").
+#'   Only used for legend labeling.
+#'
 #' @importFrom MSnbase plotNA
-create_missingness <- function(msnset, font_family = "Fira Code", feature_kind = "Feature") {
+#' @importFrom ggplot2 theme element_text ylim
+#' @importFrom viridis scale_color_viridis
+#' @importFrom glue glue
+#'
+#' @return A ggplot object.
+#' @export
+create_missingness <- function(msnset, font_family = "Courier New", feature_kind = "Feature") {
    p <- plotNA(msnset) +
-      theme(
-         text = element_text(family = "Fira Code")
-      ) +
       scale_color_viridis(
          discrete = TRUE,
          begin = 0.3,
@@ -477,12 +584,30 @@ create_missingness <- function(msnset, font_family = "Fira Code", feature_kind =
 }
 
 
-#' @export
+#' Create Multi-Contrast PCA Plots
+#'
+#' Generates a series of Principal Component Analysis (PCA) plots, each
+#' colored by a different pData contrast.
+#'
+#' @param msnset MSnSet. The object containing expression data.
+#' @param contrasts_to_test Character. Vector of pData columns for which to make a PCA plot.
+#' @param colors_fn Function. A function that returns a color palette (e.g., \code{pals::glasbey}).
+#' @param ret_i Integer. Optional. If provided, returns only the i-th plot.
+#' @param legend_position Character. Positioning of the legend ("right", "bottom", etc.).
+#' @param as_list Logical. If TRUE, returns a list of individual ggplot objects.
+#' @param ... Additional arguments passed to \code{cowplot::plot_grid}.
+#'
+#'
+#' @importFrom Biobase pData
 #' @importFrom cowplot plot_grid
-#' @importFrom ggplot2 ggtitle theme element_text
+#' @importFrom ggplot2 ggtitle theme element_text scale_color_manual
+#'    scale_fill_manual unit
 #' @importFrom viridis scale_color_viridis scale_fill_viridis
 #' @importFrom glue glue
 #' @importFrom pals glasbey
+#'
+#' @return A ggplot object (grid) or a list of ggplot objects.
+#' @export
 create_multi_pca <- function(
   msnset,
   contrasts_to_test,
@@ -537,9 +662,41 @@ create_multi_pca <- function(
    }
 }
 
-# qc_report(morig, msnset, c("NCI7", "PlexID", "pY_cluster", "sex", "cancer_status", "race_ethnicity"), title = "Liver TMT Global QC Report")
 
-#' @note Order the contrasts in `p_data_contrasts` with the first being the primary grouping variable for boxplots, etc. and the second being the secondary grouping variable.
+#' Generate QC Report
+#'
+#' Streamlines the creation of multiple QC visualizations and compiles them
+#' into a Quarto/Markdown report.
+#'
+#' @param msnset MSnSet. The processed version (e.g., after normalization if desired).
+#' @param msnset_orig MSnSet. The original object (for missingness plots).
+#' @param p_data_contrasts Character. Vector of pData columns to use as
+#'    primary and secondary grouping variables
+#' @param the_sch_samples Character. Vector of sample names for the detailed
+#'    correlation heatmap. If NULL and that plot is requested, an error will be raised.
+#' @param report_output_path Character. File path where the report (\code{.qmd})
+#'    will be saved.
+#' @param plot_cache_dir Character. Optional. Directory to cache plot objects
+#'    as \code{.rds} files.
+#' @param report_title Character. Title of the report.
+#' @param self_contained Logical. Whether the HTML report should be self-contained.
+#' @param feature_kind Character. Label for features (e.g., "Protein"). Used for legend labeling.
+#' @param img_dims List. Named list of numeric vectors defining \code{c(width, height)}
+#'    for each plot type. This is the primary interface for controlling which plots are generated.
+#'    Supported names are: \code{boxplot}, \code{feature_count}, \code{missingness}, \code{multi_pca},
+#'    \code{overall_correlation_heatmap}, \code{samples_correlation_heatmap}, \code{faceted_density_plot}, and \code{layered_density_plot}.
+#'
+#' @details ADDINS.PNNL is required.
+#'
+#' @importFrom Biobase pData
+#' @importFrom glue glue
+#' @importFrom tools toTitleCase
+#' @importFrom grid unit
+#' @importFrom utils readRDS saveRDS
+#' @importFrom graphics png dev.off
+#' @importFrom knitr include_graphics
+#'
+#' @return None. Saves a file to \code{report_output_path} and renders it.
 #' @export
 qc_report <- function(msnset, msnset_orig, p_data_contrasts, the_sch_samples, report_output_path, plot_cache_dir = NULL, report_title = "QC Report", self_contained = TRUE, feature_kind = "Feature", img_dims = list(
                          boxplot = c(8, 6),
@@ -641,6 +798,9 @@ qc_report <- function(msnset, msnset_orig, p_data_contrasts, the_sch_samples, re
    }
 
    if ("samples_correlation_heatmap" %in% names(img_dims)) {
+      if (is.null(the_sch_samples)) {
+         stop("the_sch_samples must be provided to create samples_correlation_heatmap")
+      }
       creating("samples_correlation_heatmap")
       tf <- tempfile(fileext = ".png")
       png(tf)
@@ -759,6 +919,18 @@ format:
    }
 
    writeLines(rmd_content, report_output_path)
+
+   # Check if crochet is installed
+   if (!requireNamespace("ADDINS.PNNL", quietly = TRUE)) {
+      stop("The 'ADDINS.PNNL' package is required to render the QC report.")
+   }
+   if (!"crochet" %in% ls("package:ADDINS.PNNL")) {
+      stop(glue(
+         "The 'ADDINS.PNNL' package is installed but does not contain the ",
+         "'crochet' function. As of last, this should be either on the ",
+         "`feature/crochet-notebook-renderer` branch or perhaps `main` branch (in the future)."
+      ))
+   }
 
    ADDINS.PNNL::crochet(
       abs_input_files = report_output_path,
