@@ -41,7 +41,18 @@ each feature on the model's prediction of a specific class, along with the
 underlying protein abundance.
 }
 \references{
-Lundberg, S. M., & Lee, S. I. (2017). A unified approach to interpreting model predictions.
-Advances in neural information processing systems, 30.
-\url{https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html}
+SHAP paper:
+  doi = 10.5555/3295222.3295230,
+  author = Lundberg, Scott M. and Lee, Su-In,
+  title = A unified approach to interpreting model predictions,
+  year = 2017,
+  isbn = 9781510860964,
+  publisher = Curran Associates Inc.,
+  address = Red Hook, NY, USA,
+  abstract = Understanding why a model makes a certain prediction can be as crucial as the prediction's accuracy in many applications. However, the highest accuracy for large modern datasets is often achieved by complex models that even experts struggle to interpret, such as ensemble or deep learning models, creating a tension between accuracy and interpretability. In response, various methods have recently been proposed to help users interpret the predictions of complex models, but it is often unclear how these methods are related and when one method is preferable over another. To address this problem, we present a unified framework for interpreting predictions, SHAP (SHapley Additive exPlanations). SHAP assigns each feature an importance value for a particular prediction. Its novel components include: (1) the identification of a new class of additive feature importance measures, and (2) theoretical results showing there is a unique solution in this class with a set of desirable properties. The new class unifies six existing methods, notable because several recent methods in the class lack the proposed desirable properties. Based on insights from this unification, we present new methods that show improved computational performance and/or better consistency with human intuition than previous approaches.,
+  booktitle = Proceedings of the 31st International Conference on Neural Information Processing Systems,
+  pages = 4768–4777,
+  numpages = 10,
+  location = Long Beach, California, USA,
+  series = NIPS'17
 }

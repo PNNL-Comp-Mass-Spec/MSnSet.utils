@@ -19,17 +19,23 @@ run_msConvert_cli(
 
 \item{output_dir}{Character. Directory to save converted .mzML files.}
 
-\item{msconvert_path}{Character. Path to msconvert executable. If NULL, will use msconvert from system PATH.}
+\item{msconvert_path}{Character. Path to \code{msconvert} executable. If NULL, will use \code{msconvert} from system \code{PATH}.}
 
 \item{addl_cli_args}{Character vector. Additional command-line arguments for msconvert. Default includes zlib compression and peak picking.}
 
 \item{overwrite}{Logical. Whether to overwrite existing files. Default is FALSE.}
 }
 \value{
-Invisible list of msconvert command outputs for each file.
+Invisible list of msconvert command outputs for each file, indexed by the raw filename.
 }
 \description{
 Converts Thermo .raw files to .mzML format using the msConvert command-line tool.
+}
+\details{
+This function requires \code{msconvert} to be installed (part of ProteoWizard).
+It will create the \code{output_dir} if it doesn't exist.
+Logs are saved as \code{msconvert_logs.RDS} in the \code{output_dir}.
+Note: On non-Windows systems, ensure \code{msconvert} is in the PATH or provide the path.
 }
 \examples{
 \dontrun{

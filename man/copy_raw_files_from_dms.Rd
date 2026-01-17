@@ -14,7 +14,11 @@ copy_raw_files_from_dms(data_package_num, base_path, overwrite = FALSE)
 \item{overwrite}{Logical. Whether to overwrite existing files. Default is FALSE.}
 }
 \value{
-Invisible list containing paths to copied files and copy status.
+Invisible list containing:
+\itemize{
+  \item{files}{Paths to the local copied files.}
+  \item{status}{Logical vector indicating success of each copy operation.}
+}
 }
 \description{
 Downloads raw mass spectrometry files from a DMS data package to a local

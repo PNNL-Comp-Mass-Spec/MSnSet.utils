@@ -19,11 +19,11 @@ organize_mzml_by_plex(
 \item{overwrite}{Logical. Whether to overwrite existing files. Default is FALSE.}
 
 \item{sub_with_cap_grp_1}{Character. Used to obtain plex ID through a
-call to `sub(sub_with_cap_grp_1, "\\1", <filename>)`.
+call to \code{sub(sub_with_cap_grp_1, "\\1", <filename>)}.
 Default captures first two digits.}
 }
 \value{
-Invisible list of new file paths.
+Invisible character vector of the new paths for the moved mzML files.
 }
 \description{
 Moves mzML files into plex-specific subdirectories based on filename regex.

@@ -7,7 +7,11 @@
 #' @param base_path Character. Base directory path for storing files.
 #' @param overwrite Logical. Whether to overwrite existing files. Default is FALSE.
 #'
-#' @return Invisible list containing paths to copied files and copy status.
+#' @return Invisible list containing:
+#' \itemize{
+#'   \item{files}{Paths to the local copied files.}
+#'   \item{status}{Logical vector indicating success of each copy operation.}
+#' }
 #' @export
 copy_raw_files_from_dms <- function(data_package_num, base_path, overwrite = FALSE) {
    if (!is.numeric(data_package_num) || data_package_num <= 0) {
@@ -92,11 +96,17 @@ copy_raw_files_from_dms <- function(data_package_num, base_path, overwrite = FAL
 #'
 #' @param raw_files_dir Character. Directory containing .raw files to convert.
 #' @param output_dir Character. Directory to save converted .mzML files.
-#' @param msconvert_path Character. Path to msconvert executable. If NULL, will use msconvert from system PATH.
+#' @param msconvert_path Character. Path to \code{msconvert} executable. If NULL, will use \code{msconvert} from system \code{PATH}.
 #' @param addl_cli_args Character vector. Additional command-line arguments for msconvert. Default includes zlib compression and peak picking.
 #' @param overwrite Logical. Whether to overwrite existing files. Default is FALSE.
 #'
-#' @return Invisible list of msconvert command outputs for each file.
+#' @details
+#' This function requires \code{msconvert} to be installed (part of ProteoWizard).
+#' It will create the \code{output_dir} if it doesn't exist.
+#' Logs are saved as \code{msconvert_logs.RDS} in the \code{output_dir}.
+#' Note: On non-Windows systems, ensure \code{msconvert} is in the PATH or provide the path.
+#'
+#' @return Invisible list of msconvert command outputs for each file, indexed by the raw filename.
 #' @export
 #'
 #' @examples
@@ -184,10 +194,10 @@ run_msConvert_cli <- function(
 #' @param dest_mzML_subdirs Character. Name of mzML subdirectory. Default is "plexes".
 #' @param overwrite Logical. Whether to overwrite existing files. Default is FALSE.
 #' @param sub_with_cap_grp_1 Character. Used to obtain plex ID through a
-#'    call to `sub(sub_with_cap_grp_1, "\\1", <filename>)`.
+#'    call to \code{sub(sub_with_cap_grp_1, "\\1", <filename>)}.
 #'    Default captures first two digits.
 #'
-#' @return Invisible list of new file paths.
+#' @return Invisible character vector of the new paths for the moved mzML files.
 #' @export
 #'
 #' @examples
@@ -264,7 +274,8 @@ organize_mzml_by_plex <- function(
 #'
 #' @param mapping data.frame. Must contain columns 'plex', 'tmt', 'name'.
 #' @param mzML_plexes_dir Character. Path to the directory containing plex subdirectories.
-#' @importFrom dplyr `%>%`
+#' @importFrom dplyr %>% filter select
+#' @importFrom utils write.table
 #'
 #' @return Invisible vector of written file paths.
 #' @export
@@ -316,23 +327,62 @@ write_plex_annotation_files <- function(mapping, mzML_plexes_dir) {
 }
 
 
-#' Create MSnSet Object from Ratios and FASTA
+#' Create MSnSet Object from Expression Data and FASTA
 #'
-#' Generates an MSnSet object using ratio data and a FASTA file for feature data.
+#' Generates an MSnSet object using expression levels and a FASTA file for feature data.
 #'
-#' @param path_to_ratios_or_ratios Character or data.frame. Path to a file containing ratios or a data.frame of ratios.
+#' @param path_to_exprs_or_exprs_df Character or data.frame. Path to a file containing expression levels or a data.frame of expression levels.
 #' @param path_to_fasta_for_f_data Character. Path to the FASTA file used for feature data.
-#' @param p_data_df data.frame. Metadata with row names matching sample names in ratios.
+#' @param p_data_df data.frame. Metadata with row names matching sample names in the expression data.
+#' @param feature_name_col Character. Column name in the FASTA-derived feature data to use for matching with the \code{Index} column.
+#'    Should be one of \code{"ensembl_protein"} or \code{"ensembl_gene"}.
+#' @param semicolon_warning Logical. Whether to warn if IDs contain semicolons. Default is TRUE.
+#' @param subset_samples_by_p_data Logical. Whether to subset samples in the expression levels by those present in \code{p_data_df}. Default is \code{TRUE}.
+#' @param save_as_rds_path Character. Optional path to save the final \code{MSnSet} object as an \code{.rds} file. Default is NULL.
 #'
+#' @details
+#' \strong{This function has not been extensively tested with DIA data.}
+#' \strong{This function is currently somewhat brittle, as it requires a specific TMT format
+#' from FragPipe and a specific FASTA header format (which is from Ensembl).}
+#' 
+#' \strong{Sample Alignment between expression data and pData:}
+#' The function aligns the expression levels with sample metadata
+#' (\code{p_data_df}). It identifies the column range for samples by looking for landmark columns
+#' like \code{ReferenceIntensity} (typical for TMT from FragPipe) or \code{Transcript.Id} in the case of DIA data.
+#' This function subsets both the data and the metadata to include only the samples
+#' found in both. In this case, a warning is issued.
+#'
+#' \strong{Feature Alignment between expression data and fData:}
+#' This function pulls in feature-level metadata from a
+#' FASTA file. It parses standard sequence headers to extract Ensembl identifiers (Protein,
+#' Transcript, and Gene IDs) and descriptions. This function subsets the expression levels to
+#' include only features that can be mapped to the FASTA entries. In this case, a warning is issued.
+#'
+#' \itemize{
+#'   \item \strong{global proteomics:} For standard global studies, it uses the protein or
+#'   gene index as a simple unique identifier.
+#'   \item \strong{PTM proteomics:} For modification-site-level data,
+#'   it detects the presence of a \code{Peptide} column and automatically constructs unique
+#'   identities for each site in the format \code{Index-site@Peptide}
+#' }
+#'
+#' This function resolves potential duplicates (e.g., from multiple peptides
+#' mapping to one protein) by prioritizing the identification with the highest confidence
+#' (\code{MaxPepProb}).
+
 #' @import dplyr
 #' @importFrom Biostrings readAAStringSet
 #' @importFrom tidyr separate
-#' @importFrom fuzzyjoin regex_left_join
+#' @importFrom stringr str_split_i
+#' @importFrom glue glue
+#' @importFrom tibble column_to_rownames
+#' @importFrom rlang sym
+#' @importFrom MSnbase MSnSet
 #'
 #' @return An MSnSet object containing the processed data.
 #' @export
 create_msnset <- function(
-  path_to_ratios_or_ratios,
+  path_to_exprs_or_exprs_df,
   path_to_fasta_for_f_data,
   p_data_df,
   feature_name_col = c("ensembl_protein", "ensembl_gene"),
@@ -340,40 +390,42 @@ create_msnset <- function(
   subset_samples_by_p_data = TRUE,
   save_as_rds_path = NULL
 ) {
+   feature_name_col <- match.arg(feature_name_col)
    Index <- NULL
    MaxPepProb <- NULL
    . <- NULL
    description <- NULL
    name <- NULL
+   feature_id <- NULL
 
-   get_ratios <- function() {
-      if (is.character(path_to_ratios_or_ratios)) {
-         if (!file.exists(path_to_ratios_or_ratios)) {
-            stop("Ratios file does not exist: ", path_to_ratios_or_ratios, call. = FALSE)
+   get_exprs <- function() {
+      if (is.character(path_to_exprs_or_exprs_df)) {
+         if (!file.exists(path_to_exprs_or_exprs_df)) {
+            stop("Expression data file does not exist: ", path_to_exprs_or_exprs_df, call. = FALSE)
          }
-         ratios <- read.delim(path_to_ratios_or_ratios, stringsAsFactors = FALSE, check.names = FALSE)
-         if (ncol(ratios) < 7) {
-            stop("Ratios file must contain at least 7 columns (including metadata and sample columns).", call. = FALSE)
+         exprs_df <- read.delim(path_to_exprs_or_exprs_df, stringsAsFactors = FALSE, check.names = FALSE)
+         if (ncol(exprs_df) < 7) {
+            stop("Expression data file must contain at least 7 columns (including metadata and sample columns).", call. = FALSE)
          }
-      } else if (is.data.frame(path_to_ratios_or_ratios)) {
-         ratios <- path_to_ratios_or_ratios
+      } else if (is.data.frame(path_to_exprs_or_exprs_df)) {
+         exprs_df <- path_to_exprs_or_exprs_df
       } else {
-         stop("'path_to_ratios_or_ratios' must be either a file path or a data.frame.", call. = FALSE)
+         stop("'path_to_exprs_or_exprs_df' must be either a file path or a data.frame.", call. = FALSE)
       }
-      return(ratios)
+      return(exprs_df)
    }
 
-   ratios <- get_ratios()
-   if (!"Index" %in% colnames(ratios)) {
-      stop("'(path to ratios or) ratios' data.frame must contain an 'Index' column.", call. = FALSE)
+   exprs_df <- get_exprs()
+   if (!"Index" %in% colnames(exprs_df)) {
+      stop("'(path to exprs or) exprs' data.frame must contain an 'Index' column.", call. = FALSE)
    }
-   orig_feat_count <- nrow(ratios)
-   if ("ReferenceIntensity" %in% colnames(ratios)) {
-      where_samples_start <- (which(colnames(ratios) == "ReferenceIntensity") + 1)
-   } else if ("Transcript.Id" %in% colnames(ratios)) {
-      where_samples_start <- (which(colnames(ratios) == "Transcript.Id") + 1)
+   orig_feat_count <- nrow(exprs_df)
+   if ("ReferenceIntensity" %in% colnames(exprs_df)) {
+      where_samples_start <- (which(colnames(exprs_df) == "ReferenceIntensity") + 1)
+   } else if ("Transcript.Id" %in% colnames(exprs_df)) {
+      where_samples_start <- (which(colnames(exprs_df) == "Transcript.Id") + 1)
    } else {
-      stop("Cannot determine where sample columns start in ratios data.frame. ",
+      stop("Cannot determine where sample columns start in expression data.frame. ",
          "Expected 'ReferenceIntensity' (for TMT/fragpipe) or 'Transcript.Id' (for DIA/<DIA tool placeholder>) column to be present.",
          call. = FALSE
       )
@@ -382,12 +434,12 @@ create_msnset <- function(
    get_p_data <- function() {
       tryCatch(
          {
-            a <- sort(colnames(ratios)[where_samples_start:ncol(ratios)])
+            a <- sort(colnames(exprs_df)[where_samples_start:ncol(exprs_df)])
             b <- sort(rownames(p_data_df))
             if (!all(a %in% b)) {
                samples_to_use <- a[a %in% b]
-               warning("Subsetting ratios and pData to matching samples. ",
-                  "Samples in ratios not found in pData: ",
+               warning("Subsetting expression data and pData to matching samples. ",
+                  "Samples in expression data not found in pData: ",
                   paste(setdiff(a, b), collapse = ", "),
                   "Number of samples going forward: ", length(samples_to_use),
                   call. = FALSE
@@ -395,27 +447,27 @@ create_msnset <- function(
             } else {
                samples_to_use <- intersect(a, b)
                if (length(a) != length(b)) {
-                  warning("Subsetting ratios and pData to matching samples. ",
+                  warning("Subsetting expression data and pData to matching samples. ",
                      "Number of samples going forward: ", length(samples_to_use),
                      call. = FALSE
                   )
                }
             }
-            ratios <<- ratios %>%
+            exprs_df <<- exprs_df %>%
                select(
                   1:(where_samples_start - 1),
                   all_of(samples_to_use)
                )
          },
          error = function(e) {
-            stop("Error in matching pData row names to `ratios` sample names: ",
+            stop("Error in matching pData row names to `exprs_df` sample names: ",
                conditionMessage(e),
                call. = FALSE
             )
          }
       )
 
-      p_data_df <- p_data_df[colnames(ratios)[where_samples_start:ncol(ratios)], ]
+      p_data_df <- p_data_df[colnames(exprs_df)[where_samples_start:ncol(exprs_df)], ]
       return(p_data_df)
    }
 
@@ -458,11 +510,11 @@ create_msnset <- function(
             }
             if (check_flag) {
                missing_mappings <- setdiff(
-                  unique(ratios$Index),
+                  unique(exprs_df$Index),
                   feature_df[[feature_name_col]]
                )
                if (length(missing_mappings) > 0) {
-                  stop("The following IDs from the ratios data.frame could not ",
+                  stop("The following IDs from the expression data.frame could not ",
                      "be found in the provided to the FASTA file ",
                      normalizePath(path_to_fasta_for_f_data),
                      "':\n\n  * ",
@@ -474,8 +526,8 @@ create_msnset <- function(
          }
       )
 
-      if ("Peptide" %in% colnames(ratios)) { # PTM data - reformat Index to Index-site@Peptide
-         ratios_new <- ratios %>%
+      if ("Peptide" %in% colnames(exprs_df)) { # PTM data - reformat Index to Index-site@Peptide
+         exprs_new <- exprs_df %>%
             mutate(site = sub(".*_([^_]+$)", "\\1", Index)) %>%
             mutate(
                feature_id = paste0(
@@ -484,18 +536,18 @@ create_msnset <- function(
             )
          join_on <- "ProteinID"
       } else { # Global data - no reformatting
-         ratios_new <- ratios %>%
+         exprs_new <- exprs_df %>%
             mutate(feature_id = Index)
          join_on <- "Index"
       }
 
 
-      f_data <- ratios_new %>%
+      f_data <- exprs_new %>%
          arrange(MaxPepProb) %>%
          as.data.frame() %>%
          `rownames<-`(.$Index) %>%
          select(
-            -c((where_samples_start):ncol(ratios))
+            -c((where_samples_start):ncol(exprs_df))
          ) %>%
          inner_join(feature_df,
             by = setNames(feature_name_col, join_on),
@@ -511,13 +563,13 @@ create_msnset <- function(
          sort_by <- "GeneNames"
       }
 
-      ratios_new <- ratios_new %>%
+      exprs_new <- exprs_new %>%
          arrange(!!sym(sort_by)) %>%
          dplyr::filter(!duplicated(feature_id)) %>%
          tibble::column_to_rownames("feature_id") %>%
-         select(all_of(setdiff(colnames(ratios_new), colnames(f_data))))
+         select(all_of(setdiff(colnames(exprs_new), colnames(f_data))))
 
-      ratios <<- ratios_new
+      exprs_df <<- exprs_new
 
       semicolon_rows <- which(grepl(";", f_data$ensembl_gene))
       if (length(semicolon_rows) > 0 && semicolon_warning) {
@@ -533,7 +585,7 @@ create_msnset <- function(
 
 
    get_e_data <- function(f_data) {
-      e_data <- ratios[rownames(f_data), ] %>% as.matrix()
+      e_data <- exprs_df[rownames(f_data), ] %>% as.matrix()
 
       return(e_data)
    }
@@ -556,7 +608,7 @@ create_msnset <- function(
          orig_feat_count,
          " to ",
          nrow(f_data),
-         ". This may indicate missing mappings between ratios and FASTA.",
+         ". This may indicate missing mappings between expression levels and FASTA.",
          call. = FALSE
       )
    }
@@ -568,7 +620,7 @@ create_msnset <- function(
       stop(
          glue("Column names of e_data (dim = {dim(e_data)[1]} x {dim(e_data)[2]}) do "),
          glue("not match row names of p_data (dim = {dim(p_data)[1]} x {dim(p_data)[2]}). "),
-         "Please ensure that sample names are consistent between the ratios data.frame and p_data_df.",
+         "Please ensure that sample names are consistent between the expression data.frame and p_data_df.",
          call. = FALSE
       )
    }
@@ -577,7 +629,7 @@ create_msnset <- function(
       stop(
          glue("Row names of e_data (dim = {dim(e_data)[1]} x {dim(e_data)[2]}) do "),
          glue("not match row names of f_data (dim = {dim(f_data)[1]} x {dim(f_data)[2]}). "),
-         "Please ensure that feature names are consistent between the ratios data.frame and the FASTA file.",
+         "Please ensure that feature names are consistent between the expression data.frame and the FASTA file.",
          call. = FALSE
       )
    }
