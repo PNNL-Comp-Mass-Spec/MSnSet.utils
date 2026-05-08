@@ -4,10 +4,14 @@
 \alias{read_FragPipe_LFQ}
 \title{Reading MSFragger-generated LFQ-based MSstats from a file path as MSnSet object}
 \usage{
-read_FragPipe_LFQ(path = NULL)
+read_FragPipe_LFQ(path = NULL, type = c("CP", "MSstats"))
 }
 \arguments{
 \item{path}{character; File path to the FragPipe-generated MSstats.csv file}
+
+\item{type}{Either "CP" or "MSstats". In the first case reads the results
+from MaxQuant-like output file "combined_protein.tsv". In the second the
+reults are taken from "MSstats.csv".}
 }
 \value{
 (MSnSet) MSnSet object of MSFragger LFQ results
