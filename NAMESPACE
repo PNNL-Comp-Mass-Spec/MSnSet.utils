@@ -3,6 +3,7 @@
 export(ComBat.NA)
 export(PeCorA)
 export(adjust_for_parent_protein_profiles)
+export(affinity_enrichment_stats)
 export(blue.colors)
 export(complex_heatmap)
 export(concatenate_by_features)
