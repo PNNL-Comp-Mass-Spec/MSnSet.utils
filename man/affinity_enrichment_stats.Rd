@@ -4,7 +4,7 @@
 \alias{affinity_enrichment_stats}
 \title{Affinity Enrichment Statistics}
 \usage{
-affinity_enrichment_stats(m1, m2, prefix)
+affinity_enrichment_stats(m1, m2, prefix = NULL)
 }
 \arguments{
 \item{m1}{MSnSet with enriched data. Replicates will be averaged.}

@@ -20,7 +20,7 @@
 #'
 #' @export affinity_enrichment_stats
 
-affinity_enrichment_stats <- function(m1, m2, prefix){
+affinity_enrichment_stats <- function(m1, m2, prefix = NULL){
 
   stopifnot(all(featureNames(m1) == featureNames(m2)))
 
@@ -30,7 +30,9 @@ affinity_enrichment_stats <- function(m1, m2, prefix){
   pval <- pnorm(abs(diff), mean(diff), sd(diff), lower.tail = FALSE)
   padj <- p.adjust(pval, method = "BH")
   df_out <- data.frame(diff, pval, padj)
-  colnames(df_out) <- paste(prefix, colnames(df_out), sep = ".")
+  if(!is.null(prefix) && prefix != ""){
+    colnames(df_out) <- paste(prefix, colnames(df_out), sep = ".")
+  }
   rownames(df_out) <- featureNames(m1)
   return(df_out)
 
