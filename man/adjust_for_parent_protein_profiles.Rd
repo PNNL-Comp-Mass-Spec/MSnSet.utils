@@ -4,12 +4,14 @@
 \alias{adjust_for_parent_protein_profiles}
 \title{Adjusting PTM profiles by global}
 \usage{
-adjust_for_parent_protein_profiles(m_ptm, m_global)
+adjust_for_parent_protein_profiles(m_ptm, m_global, method = "subtraction")
 }
 \arguments{
 \item{m_ptm}{MSnSet with PTM data}
 
 \item{m_global}{MSnSet with global data}
+
+\item{method}{One of "subtraction", "compensation" or "regression"}
 }
 \value{
 MSnSet object
@@ -19,4 +21,30 @@ Adjusting PTM relative abundance profiles by the global profiles of the
 parent protein. The motivation behind this adjustment is that there are two
 contributions to the observed PTM abundance changes - change in the
 PTM stoichiometry and the change in the parent protein abundance.
+}
+\details{
+\itemize{
+   \item \bold{Subtraction:} This simple method works best if there is
+   no dynamic range compression. Otherwise, if global data has higher
+   compression, the PTM data will be undercorrected. It calculates
+   the adjusted profile as: \eqn{PTM_{adj} = PTM_{obs} - Protein_{global}}.
+
+   \item \bold{Compensation:} Experimental! The algorithm tries to
+   infer the overall dynamic range compression coefficient from the entire
+   data by fitting \emph{total} least squares regression. Then this coefficient
+   is use for the adjustment similar to the \bold{subtraction} algorithm:
+   \eqn{PTM_{adj} = PTM_{obs} - coeff*Protein_{global}}
+
+   \item \bold{Regression:} This method fits a linear model for each feature:
+   \eqn{PTM_{obs} \sim \beta_0 + \beta_1 \cdot Protein_{global}}. Then
+   \eqn{PTM_{adj} = PTM_{obs} - \beta_0 + \beta_1 \cdot Protein_{global}}
+   Works well only if there are lots of samples with varying change
+   (e.g. cohort of human subjects). It probably won't work for A vs B
+   comparison. Since this is basically two point and thus there is no
+   room for regression.
+}
+
+Features that do not have matching parent protein data or have insufficient
+data points for regression are returned as \code{NA} and subsequently
+filtered.
 }
