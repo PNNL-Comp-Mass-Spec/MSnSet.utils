@@ -12,7 +12,8 @@ peptide_significance_map(
   accession_col = "accession",
   title_from = accession_col,
   min_y = 0,
-  width_y = 0.025,
+  prot_width_y = 0.025,
+  pep_width_y = 0.025,
   step_y = 0.033,
   border_color = "white",
   border_size = NULL,
@@ -44,8 +45,6 @@ plot title. Defaults to \code{accession_col}.}
 
 \item{min_y}{numeric; shifts peptides vertically.}
 
-\item{width_y}{numeric; vertical width of each peptide rectangle.}
-
 \item{step_y}{numeric; step size to resolve peptide overlaps.}
 
 \item{border_color}{character; color used for the borders of the peptide
@@ -60,6 +59,8 @@ and continuing along the length of the protein.}
 
 \item{...}{other arguments passed to functions determined by \code{type}. See
 details for more information.}
+
+\item{width_y}{numeric; vertical width of each peptide rectangle.}
 }
 \value{
 \code{ggplot} object.

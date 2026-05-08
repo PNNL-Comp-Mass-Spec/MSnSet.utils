@@ -9,7 +9,8 @@ plot_peptide_on_protein_map(
   fill_by,
   border_color = "white",
   border_size = NULL,
-  aa_step = 20
+  aa_step = 20,
+  env = parent.frame()
 )
 }
 \arguments{

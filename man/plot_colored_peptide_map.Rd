@@ -12,7 +12,8 @@ plot_colored_peptide_map(
   step_y = 0.033,
   border_color = "white",
   border_size = NULL,
-  aa_step = 20
+  aa_step = 20,
+  env = parent.frame()
 )
 }
 \arguments{

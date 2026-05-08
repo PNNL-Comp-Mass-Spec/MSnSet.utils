@@ -9,10 +9,10 @@ peptide_significance_map_manhattan(
   p_val_from,
   fill_by = NULL,
   min_y = 0,
-  width_y = 0.025,
   border_color = "white",
   border_size = NULL,
-  aa_step = 20
+  aa_step = 20,
+  env = parent.frame()
 )
 }
 \arguments{
@@ -26,8 +26,6 @@ rectangles. Default is `NULL`, which will use `p_val_from`.}
 
 \item{min_y}{numeric; shifts peptides vertically.}
 
-\item{width_y}{numeric; vertical width of each peptide rectangle.}
-
 \item{border_color}{character; color used for the borders of the peptide
 rectangles.}
 
@@ -37,6 +35,8 @@ from the protein length.}
 
 \item{aa_step}{numeric; distance between x axis breaks, starting at `aa_step`
 and continuing along the length of the protein.}
+
+\item{width_y}{numeric; vertical width of each peptide rectangle.}
 }
 \description{
 Manhattan arrangement of peptides with p-value fill
