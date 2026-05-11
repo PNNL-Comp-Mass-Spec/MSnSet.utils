@@ -52,7 +52,7 @@ This function was inspired by the boxplots presented in the PeCorA
 Dermit, M., Peters-Clarke, T. M., Shishkova, E., & Meyer, J. G.
   (2021). Peptide Correlation Analysis (PeCorA) Reveals Differential
   Proteoform Regulation. \emph{Journal of proteome research, 20(4)},
-  1972–1980. \url{https://doi.org/10.1021/acs.jproteome.0c00602}
+  1972-1980. \url{https://doi.org/10.1021/acs.jproteome.0c00602}
 }
 \seealso{
 \code{\link[MSnSet.utils]{PeCorA}}
