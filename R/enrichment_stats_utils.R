@@ -27,7 +27,7 @@ affinity_enrichment_stats <- function(m1, m2, prefix = NULL){
   mean_1 <- apply(exprs(m1), 1, mean, na.rm = TRUE)
   mean_2 <- apply(exprs(m2), 1, mean, na.rm = TRUE)
   diff <- mean_1 - mean_2
-  pval <- pnorm(abs(diff), mean(diff), sd(diff), lower.tail = FALSE)
+  pval <- pnorm(abs(diff), median(diff), mad(diff), lower.tail = FALSE)
   padj <- p.adjust(pval, method = "BH")
   df_out <- data.frame(diff, pval, padj)
   if(!is.null(prefix) && prefix != ""){
