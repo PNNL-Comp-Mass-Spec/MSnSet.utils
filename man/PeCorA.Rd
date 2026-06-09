@@ -18,11 +18,6 @@ PeCorA(
 )
 }
 \arguments{
-\item{m}{\code{MSnSet} object with pData and fData tables. fData must have
-columns \code{protein_column} and \code{peptide_column}. The exprs data
-should be aggregated such that features are unique combinations of peptide
-and protein.}
-
 \item{proteins}{character; one or more proteins in
 \code{fData(m)[[protein_column]]} with peptides to test. Only those
 proteins with at least 2 peptides will be considered.}
@@ -61,8 +56,7 @@ An \code{MSnSet} where the fData table includes new or updated
   p-values are adjusted on a per protein basis, using the BH method.
 }
 \description{
-Perform Peptide Correlation Analysis (PeCorA) as described in
-  \url{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8592057/}.
+Peptide Correlation Analysis (PeCorA)
 }
 \details{
 By default, the MSnSet provided by \code{m} will be normalized as
@@ -84,7 +78,7 @@ By default, the MSnSet provided by \code{m} will be normalized as
 Dermit, M., Peters-Clarke, T. M., Shishkova, E., & Meyer, J. G.
   (2021). Peptide Correlation Analysis (PeCorA) Reveals Differential
   Proteoform Regulation. \emph{Journal of proteome research, 20(4)},
-  1972–1980. \url{https://doi.org/10.1021/acs.jproteome.0c00602}
+  1972-1980. \url{https://doi.org/10.1021/acs.jproteome.0c00602}
 }
 \seealso{
 \code{\link[MSnSet.utils]{plot_PeCorA}}
