@@ -44,7 +44,7 @@ as \code{.rds} files.}
 \item{img_dims}{List. Named list of numeric vectors defining \code{c(width, height)}
 for each plot type. This is the primary interface for controlling which plots are generated.
 Supported names are: \code{boxplot}, \code{feature_count}, \code{missingness}, \code{multi_pca},
-\code{overall_correlation_heatmap}, and \code{samples_correlation_heatmap}.}
+\code{overall_correlation_heatmap}, \code{samples_correlation_heatmap}, \code{faceted_density_plot}, and \code{layered_density_plot}.}
 }
 \value{
 None. Saves a file to \code{report_output_path} and renders it.

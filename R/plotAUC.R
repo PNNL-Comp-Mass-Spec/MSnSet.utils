@@ -85,7 +85,7 @@ plotAUC <- function(modelingResult,
 #' @importFrom ROCR performance
 #' @importFrom pROC roc ci.se
 #' @importFrom tibble rownames_to_column
-#' @importFrom ggplot2 ggplot geom_abline scale_color_manual labs theme
+#' @importFrom ggplot2 ggplot geom_abline scale_linetype_manual labs theme
 #'   scale_x_continuous scale_y_continuous geom_ribbon scale_fill_manual
 #'   geom_line element_text
 #' @importFrom tidyr fill
@@ -103,7 +103,6 @@ plotAUC_gg <- function(modelingResult,
                                  choices = c("warning", "plot_blank", "error"))
 
   fpr <- lo <- hi <- NULL
-  random_line_col <- "#888888"
 
   if (is.na(modelingResult$auc)) {
     switch(no_numeric_policy,
@@ -120,8 +119,8 @@ plotAUC_gg <- function(modelingResult,
 
     # plot_blank
     p <- ggplot() +
-      geom_abline(mapping = aes(color = "", slope = 1, intercept = 0),
-                  linetype = "dashed", show.legend = FALSE) +
+      geom_abline(slope = 1, intercept = 0, linetype = "dashed",
+                  color = "#888888", show.legend = FALSE) +
       labs(subtitle = "AUC: NA")
   } else {
     p <- plot_main(modelingResult = modelingResult,
@@ -136,7 +135,6 @@ plotAUC_gg <- function(modelingResult,
                        limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
     scale_y_continuous(name = "True Positive Rate",
                        limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
-    scale_color_manual(values = random_line_col) +
     ggtitle("ROC Curve") +
     theme(aspect.ratio = 1,
           plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
@@ -194,17 +192,19 @@ plot_main <- function(modelingResult,
 
   ribbon_col <- "#c96f6f"
   ci_col <- "red"
+  diag_df <- data.frame(x = c(0, 1), y = c(0, 1))
   p <- ggplot(data = df) +
-    geom_abline(mapping = aes(color = "", slope = 1, intercept = 0),
-                linetype = "dashed", show.legend = FALSE)
+    geom_line(data = diag_df,
+              mapping = aes(x = x, y = y, linetype = "Random model"),
+              color = "#888888")
 
   if (conf_int) {
     p <- p +
       geom_ribbon(data = the_ci,
                   mapping = aes(x = fpr, ymin = lo, ymax = hi, fill = ""),
                   color = ci_col, alpha = 0.5) +
-      scale_fill_manual(name = "95% CI", values = ribbon_col) +
-      labs(subtitle = sprintf("AUC: %.3f\nAUC CI: [%.3f, %.3f]",
+      scale_fill_manual(name = "95% bootstrap C.I.", values = ribbon_col) +
+      labs(subtitle = sprintf("AUC: %.3f\nAUC C.I.: [%.3f, %.3f]",
                               modelingResult$auc, auc.ci.lo, auc.ci.hi))
   } else {
     p <- p +
@@ -212,7 +212,11 @@ plot_main <- function(modelingResult,
   }
 
   p <- p +
-    geom_line(mapping = aes(x = x, y = y), lwd = 1)
+    geom_line(mapping = aes(x = x, y = y, linetype = "Model curve (LOOCV)"), lwd = 1) +
+    scale_linetype_manual(
+      name = NULL,
+      values = c("Model curve (LOOCV)" = "solid", "Random model" = "dashed")
+    )
 
   return(p)
 }
