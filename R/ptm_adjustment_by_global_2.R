@@ -253,6 +253,10 @@ calc_rowwise_pvals_for_beta_deviation <- function(x_ptm, x_glob, beta_null = 0) 
 
 moderate_betas <- function(x, visualize = F){
 
+  # take care of NA values
+  idx_na <- is.na(x)
+  x <- x[!idx_na]
+
   # ==========================================
   # Expectation-Maximization (EM) Algorithm
   # ==========================================
@@ -372,8 +376,10 @@ moderate_betas <- function(x, visualize = F){
   # if it is changing, then subtract
 
   beta_hat <- prob_changing * mu_nonchanging + (1-prob_changing) * x
+  out <- rep(NA, length(idx_na))
+  out[!idx_na] <- beta_hat
 
-  return(beta_hat)
+  return(out)
 
 }
 
