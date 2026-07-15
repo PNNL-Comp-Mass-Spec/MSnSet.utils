@@ -2,7 +2,7 @@
 #'
 #' This utility works to filter results of enrich* test
 #' from \code{\link[clusterProfiler]{clusterProfiler-package}},
-#' \code{\link[DOSE]{DOSE-package}} or
+#' \code{\link[enrichit]{enrichit-package}} or
 #' \code{\link[ReactomePA]{ReactomePA-package}}
 #'
 #' @param x is an \code{enrichResults} instance
@@ -14,7 +14,7 @@
 #' @return filtered \code{enrichResults} instance
 #'
 #' @importFrom qvalue qvalue
-#' @importFrom DOSE geneInCategory
+#' @importFrom enrichit geneInCategory
 #' @importFrom stats p.adjust
 #'
 #' @export subset_by_size
