@@ -36,7 +36,7 @@ compute_enrichment_stats <- function(enriched, target, background){
   fold_enrichment <- (TP/(TP+FP))/((TP+FN)/(FP+TN+TP+FN))
   MCC <- (TP*TN-FP*FN)/sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
 
-  confusion_matrix <- matrix(c(TP, FN, FP, TN), nrow = 2, byrow = TRUE,
+  confusion_matrix <- matrix(c(TP, FP, FN, TN), nrow = 2, byrow = TRUE,
                              dimnames = list(predicted = c("enriched", "not enriched"),
                                              actual = c("target", "not target")))
 
