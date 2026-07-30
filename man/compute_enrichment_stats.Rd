@@ -14,7 +14,9 @@ compute_enrichment_stats(enriched, target, background)
 \item{background}{list of background proteins}
 }
 \value{
-numeric
+an object of class `enrichment_stats`: a named numeric vector
+  with elements `"fold enrichment"` and `"MCC"`, with the underlying
+  confusion matrix stored as a `"confusion_matrix"` attribute.
 }
 \description{
 Type of identification does not matter as long as it is the same -- be

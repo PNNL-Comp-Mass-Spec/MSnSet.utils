@@ -29,7 +29,7 @@ filtered \code{enrichResults} instance
 \description{
 This utility works to filter results of enrich* test
 from \code{\link[clusterProfiler]{clusterProfiler-package}},
-\code{\link[DOSE]{DOSE-package}} or
+\code{\link[enrichit]{enrichit-package}} or
 \code{\link[ReactomePA]{ReactomePA-package}}
 }
 \examples{
