@@ -94,38 +94,47 @@ print.enrichment_stats <- function(x, ...) {
   cm <- attr(x, "confusion_matrix")
   cm_m <- addmargins(cm)
 
-  # Convert matrix counts to formatted string matrix for uniform width alignment
+  # Format numbers with commas
   str_cm <- apply(cm_m, c(1, 2), function(val) format(val, big.mark = ","))
 
-  # Determine width required for column alignment
-  col_widths <- apply(rbind(colnames(str_cm), str_cm), 2, function(col) max(nchar(col)))
-  col_widths <- pmax(col_widths, 8)  # ensure at least width 8
+  # Calculate dynamic column widths based on longest string in each column
+  col_names <- colnames(str_cm)
+  col_widths <- sapply(1:3, function(j) {
+    max(nchar(col_names[j]), nchar(str_cm[, j]))
+  })
+
+  # Give columns a little breathing room (minimum width 10)
+  col_widths <- pmax(col_widths, 10)
 
   row_names <- rownames(str_cm)
-  max_row_name_len <- max(nchar(row_names))
+  max_row_name_len <- max(nchar(c(row_names, "enriched \\ target"))) + 1
 
   # Helper to format a single table row cleanly
   fmt_row <- function(label, vals) {
     lbl_pad <- sprintf(paste0("%-", max_row_name_len, "s"), label)
-    val_pad <- mapply(function(v, w) sprintf(paste0("%", w, "s"), v), vals, col_widths)
-    paste0(lbl_pad, " | ", paste(val_pad[1:2], collapse = " "), " | ", val_pad[3])
+    v1 <- sprintf(paste0("%", col_widths[1], "s"), vals[1])
+    v2 <- sprintf(paste0("%", col_widths[2], "s"), vals[2])
+    v3 <- sprintf(paste0("%", col_widths[3], "s"), vals[3])
+    paste0(lbl_pad, " | ", v1, "  ", v2, " | ", v3)
   }
 
-  # 1. Header row
+  # 1. Header Row
   lbl_header <- sprintf(paste0("%-", max_row_name_len, "s"), "enriched \\ target")
-  col_headers <- mapply(function(v, w) sprintf(paste0("%", w, "s"), v), colnames(str_cm), col_widths)
-  header_str <- paste0(lbl_header, " | ", paste(col_headers[1:2], collapse = " "), " | ", col_headers[3])
+  h1 <- sprintf(paste0("%", col_widths[1], "s"), col_names[1])
+  h2 <- sprintf(paste0("%", col_widths[2], "s"), col_names[2])
+  h3 <- sprintf(paste0("%", col_widths[3], "s"), col_names[3])
+  header_str <- paste0(lbl_header, " | ", h1, "  ", h2, " | ", h3)
 
-  # 2. Separator line matching total row character width
+  # 2. Separator Line
   sep_line <- paste0(
     paste(rep("-", max_row_name_len), collapse = ""),
     "-+-",
-    paste(rep("-", col_widths[1] + col_widths[2] + 1), collapse = ""),
+    paste(rep("-", col_widths[1] + col_widths[2] + 2), collapse = ""),
     "-+-",
     paste(rep("-", col_widths[3]), collapse = "")
   )
 
-  # Print formatted ASCII table
+  # Print formatted table
   cat(header_str, "\n", sep = "")
   cat(sep_line, "\n", sep = "")
   cat(fmt_row(row_names[1], str_cm[1, ]), "\n", sep = "")
@@ -140,8 +149,4 @@ print.enrichment_stats <- function(x, ...) {
 
   invisible(x)
 }
-
-
-
-
 
