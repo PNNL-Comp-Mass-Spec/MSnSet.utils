@@ -75,7 +75,7 @@ plot_PeCorA <- function(m,
 
   padj <- try(
     f_data %>%
-      filter(!!sym(peptide_column) == peptide) %>%
+      filter(.data[[peptide_column]] == .env$peptide) %>%
       pull(result_col) %>%
       signif(3)
   )
