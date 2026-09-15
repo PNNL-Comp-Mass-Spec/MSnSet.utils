@@ -28,7 +28,7 @@
 #'
 #' @import ggplot2
 #' @importFrom scales hue_pal
-#' @importFrom rlang !! sym
+#' @importFrom rlang !! sym .data .env
 #' @importFrom dplyr %>% filter pull select mutate rename group_by distinct
 #'   summarise
 #' @importFrom tidyr pivot_longer
@@ -70,12 +70,12 @@ plot_PeCorA <- function(m,
   result_col <- paste0("pecora_adj_pval_", treatment)
 
   f_data <- f_data %>%
-    filter(!!sym(protein_column) == protein) %>%
+    filter(.data[[protein_column]] == .env$protein) %>%
     mutate(feature_name = rownames(.))
 
   padj <- try(
     f_data %>%
-      filter(!!sym(peptide_column) == peptide) %>%
+      filter(.data[[peptide_column]] == .env$peptide) %>%
       pull(result_col) %>%
       signif(3)
   )
@@ -112,11 +112,11 @@ plot_PeCorA <- function(m,
     merge(f_data, by = "feature_name") %>%
     merge(metadata, by = "Sample") %>%
     dplyr::rename(Condition = !!sym(treatment)) %>%
-    mutate(peptide_group = ifelse(!!sym(peptide_column) == peptide,
-                                  peptide, "All other peptides")) %>%
+    mutate(peptide_group = ifelse(.data[[peptide_column]] == .env$peptide,
+                                  .env$peptide, "All other peptides")) %>%
     mutate(peptide_group = factor(peptide_group,
                                   levels = c("All other peptides",
-                                             peptide))) %>%
+                                             .env$peptide))) %>%
     select(Sample, Condition, value, peptide_group)
 
   if (median_mod) {
@@ -139,7 +139,7 @@ plot_PeCorA <- function(m,
     lm_df <- filter(plot_df, peptide_group == "All other peptides")
     allothers_lm <- lm(value ~ Condition, data = lm_df)
 
-    lm_df <- filter(plot_df, peptide_group == peptide)
+    lm_df <- filter(plot_df, peptide_group == .env$peptide)
     chosen_lm <- update(allothers_lm, data = lm_df)
 
     p <- ggplot(plot_df, aes(x = Condition, y = value,
@@ -147,10 +147,10 @@ plot_PeCorA <- function(m,
       geom_point(na.rm = TRUE) +
       geom_abline(intercept = coef(allothers_lm)[1],
                   slope = coef(allothers_lm)[2],
-                  color = "red", size = 1) +
+                  color = "red", linewidth = 1) +
       geom_abline(intercept = coef(chosen_lm)[1],
                   slope = coef(chosen_lm)[2],
-                  color = scales::hue_pal()(2)[2], size = 1) +
+                  color = scales::hue_pal()(2)[2], linewidth = 1) +
       guides(alpha = "none")
   }
 
