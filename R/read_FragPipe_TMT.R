@@ -41,6 +41,11 @@ read_FragPipe_TMT <- function(path = NULL, org_to_retain = NULL, use_gene_as_pro
 
    df <- fread(file = path_to_file, showProgress = FALSE, data.table = FALSE)
 
+   if(any(duplicated(names(df)))){
+     names(df) <- make.unique.2(names(df))
+     warning("Some samples names appeared duplicated!")
+   }
+
    if(!is.null(org_to_retain)){
       combined_protein_path <- file.path(dirname(dirname(path_to_file)), "combined_protein.tsv")
       retained_proteins <- fread(file = combined_protein_path,
