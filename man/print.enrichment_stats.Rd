@@ -5,8 +5,6 @@
 \title{Print method for enrichment_stats objects}
 \usage{
 \method{print}{enrichment_stats}(x, ...)
-
-\method{print}{enrichment_stats}(x, ...)
 }
 \arguments{
 \item{x}{an object of class `enrichment_stats`}
@@ -15,13 +13,8 @@
 }
 \value{
 `x`, invisibly.
-
-`x`, invisibly.
 }
 \description{
-Prints the confusion matrix with marginal totals and summary statistics
-(fold enrichment, MCC) for an `enrichment_stats` object in a readable format.
-
 Prints the confusion matrix with marginal totals separated by table lines,
-along with summary statistics (fold enrichment, MCC).
+along with right-aligned metric labels anchored at the colons.
 }

@@ -4,7 +4,7 @@
 \alias{log2_zero_center}
 \title{Log2 transform and center around zero}
 \usage{
-log2_zero_center(m)
+log2_zero_center(m, record_med = FALSE)
 }
 \arguments{
 \item{m}{ExpresionSet or MSnSet object}
