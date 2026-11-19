@@ -4,13 +4,15 @@
 \alias{make.unique.2}
 \title{Custom Make Unique}
 \usage{
-make.unique.2(x)
+make.unique.2(names, sep = ".")
 }
 \arguments{
-\item{x}{character vector with non-unique entries}
+\item{names}{character vector with non-unique entries}
+
+\item{sep}{character separator between the name and index}
 }
 \value{
-character vector where all entries have attached suffix
+character vector where all non-unique entries have attached suffix
          resolving their non-uniqueness.
 }
 \description{
