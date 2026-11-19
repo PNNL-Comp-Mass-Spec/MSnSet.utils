@@ -40,7 +40,6 @@ read_FragPipe_TMT <- function(path = NULL, org_to_retain = NULL, use_gene_as_pro
    }
 
    df <- fread(file = path_to_file, showProgress = FALSE, data.table = FALSE)
-   names(df) <- make.unique.2(names(df))
 
    if(any(duplicated(names(df)))){
      names(df) <- make.unique.2(names(df))
