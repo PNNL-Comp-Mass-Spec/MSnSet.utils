@@ -48,38 +48,8 @@ compute_enrichment_stats <- function(enriched, target, background){
 
 #' Print method for enrichment_stats objects
 #'
-#' Prints the confusion matrix with marginal totals and summary statistics
-#' (fold enrichment, MCC) for an `enrichment_stats` object in a readable format.
-#'
-#' @param x an object of class `enrichment_stats`
-#' @param ... additional arguments (unused)
-#'
-#' @return `x`, invisibly.
-#' @export
-print.enrichment_stats <- function(x, ...) {
-  cat("Enrichment Statistics\n")
-  cat("=====================\n\n")
-  cat("Confusion matrix:\n")
-
-  # Wrap confusion matrix in addmargins() to show row and column totals
-  cm_with_margins <- addmargins(attr(x, "confusion_matrix"))
-  print(cm_with_margins)
-
-  cat("\n")
-  cat("Metrics:\n")
-  cat(sprintf("  Fold enrichment: %.3f\n", x["fold enrichment"]))
-  cat(sprintf("  MCC:              %.3f\n", x["MCC"]))
-  invisible(x)
-}
-
-
-
-
-
-#' Print method for enrichment_stats objects
-#'
 #' Prints the confusion matrix with marginal totals separated by table lines,
-#' along with summary statistics (fold enrichment, MCC).
+#' along with right-aligned metric labels anchored at the colons.
 #'
 #' @param x an object of class `enrichment_stats`
 #' @param ... additional arguments (unused)
@@ -97,19 +67,17 @@ print.enrichment_stats <- function(x, ...) {
   # Format numbers with commas
   str_cm <- apply(cm_m, c(1, 2), function(val) format(val, big.mark = ","))
 
-  # Calculate dynamic column widths based on longest string in each column
+  # Dynamic column widths based on longest string in each column
   col_names <- colnames(str_cm)
   col_widths <- sapply(1:3, function(j) {
     max(nchar(col_names[j]), nchar(str_cm[, j]))
   })
-
-  # Give columns a little breathing room (minimum width 10)
   col_widths <- pmax(col_widths, 10)
 
   row_names <- rownames(str_cm)
   max_row_name_len <- max(nchar(c(row_names, "enriched \\ target"))) + 1
 
-  # Helper to format a single table row cleanly
+  # Helper to format a single table row
   fmt_row <- function(label, vals) {
     lbl_pad <- sprintf(paste0("%-", max_row_name_len, "s"), label)
     v1 <- sprintf(paste0("%", col_widths[1], "s"), vals[1])
@@ -144,9 +112,15 @@ print.enrichment_stats <- function(x, ...) {
 
   cat("\n")
   cat("Metrics:\n")
-  cat(sprintf("  Fold enrichment: %.3f\n", x["fold enrichment"]))
-  cat(sprintf("  MCC:              %.3f\n", x["MCC"]))
+
+  # 3. Option 1: Right-aligned metric labels aligned to the colon
+  metric_names <- c("Fold enrichment", "MCC")
+  max_name_len <- max(nchar(metric_names))
+
+  cat(sprintf(paste0("  %", max_name_len, "s: %.3f\n"), metric_names[1], x["fold enrichment"]))
+  cat(sprintf(paste0("  %", max_name_len, "s: %.3f\n"), metric_names[2], x["MCC"]))
 
   invisible(x)
 }
+
 
